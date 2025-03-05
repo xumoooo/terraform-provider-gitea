@@ -2,7 +2,7 @@ module code.gitea.io/terraform-provider-gitea
 
 go 1.22.7
 
-toolchain go1.24.0
+toolchain go1.24.1
 
 require (
 	code.gitea.io/sdk/gitea v0.20.0
