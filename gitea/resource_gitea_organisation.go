@@ -21,7 +21,6 @@ const (
 
 // might come in handy if we want to stick to numeric IDs
 func searchOrgByClientId(c *gitea.Client, id int64) (res *gitea.Organization, err error) {
-
 	page := 1
 
 	for {
@@ -83,15 +82,19 @@ func resourceOrgRead(d *schema.ResourceData, meta interface{}) (err error) {
 	id, err := strconv.ParseInt(d.Id(), 10, 64)
 
 	org, err = searchOrgByClientId(client, id)
-
 	if err != nil {
 		d.SetId("")
-		return nil
+		return err
 	}
 
-	repos, _ := getAllOrgRepos(client, org.UserName)
+	repos, err := getAllOrgRepos(client, org.UserName)
+	if err != nil {
+		return err
+	}
 	err = setOrgResourceData(org, d, &repos)
-
+	if err != nil {
+		return err
+	}
 	return
 }
 
@@ -110,12 +113,14 @@ func resourceOrgCreate(d *schema.ResourceData, meta interface{}) (err error) {
 
 	org, _, err := client.CreateOrg(opts)
 	if err != nil {
-		return
+		return err
 	}
 
 	repos, _ := getAllOrgRepos(client, org.UserName)
 	err = setOrgResourceData(org, d, &repos)
-
+	if err != nil {
+		return err
+	}
 	return
 }
 
@@ -126,7 +131,6 @@ func resourceOrgUpdate(d *schema.ResourceData, meta interface{}) (err error) {
 	var resp *gitea.Response
 
 	org, resp, err = client.GetOrg(d.Get(orgName).(string))
-
 	if err != nil {
 		if resp.StatusCode == 404 {
 			resourceOrgCreate(d, meta)
@@ -149,7 +153,9 @@ func resourceOrgUpdate(d *schema.ResourceData, meta interface{}) (err error) {
 
 	repos, _ := getAllOrgRepos(client, org.UserName)
 	err = setOrgResourceData(org, d, &repos)
-
+	if err != nil {
+		return err
+	}
 	return
 }
 
@@ -159,7 +165,6 @@ func resourceOrgDelete(d *schema.ResourceData, meta interface{}) (err error) {
 	var resp *gitea.Response
 
 	resp, err = client.DeleteOrg(d.Get(orgName).(string))
-
 	if err != nil {
 		if resp.StatusCode == 404 {
 			return

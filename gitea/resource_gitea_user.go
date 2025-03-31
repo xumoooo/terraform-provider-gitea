@@ -39,7 +39,6 @@ func resourceUserRead(d *schema.ResourceData, meta interface{}) (err error) {
 	var user *gitea.User
 
 	user, resp, err = client.GetUserByID(id)
-
 	if err != nil {
 		if resp.StatusCode == 404 {
 			d.SetId("")
@@ -93,7 +92,6 @@ func resourceUserUpdate(d *schema.ResourceData, meta interface{}) (err error) {
 	var user *gitea.User
 
 	user, resp, err = client.GetUserByID(id)
-
 	if err != nil {
 		if resp.StatusCode == 404 {
 			resourceUserCreate(d, meta)
@@ -138,7 +136,6 @@ func resourceUserUpdate(d *schema.ResourceData, meta interface{}) (err error) {
 			Visibility:              &visibility,
 		}
 		_, err = client.AdminEditUser(d.Get(userName).(string), opts)
-
 		if err != nil {
 			return err
 		}
@@ -163,7 +160,6 @@ func resourceUserUpdate(d *schema.ResourceData, meta interface{}) (err error) {
 			Visibility:              &visibility,
 		}
 		_, err = client.AdminEditUser(d.Get(userName).(string), opts)
-
 		if err != nil {
 			return err
 		}
@@ -182,7 +178,6 @@ func resourceUserDelete(d *schema.ResourceData, meta interface{}) (err error) {
 	var resp *gitea.Response
 
 	resp, err = client.AdminDeleteUser(d.Get(userName).(string))
-
 	if err != nil {
 		if resp.StatusCode == 404 {
 			return
