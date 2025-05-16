@@ -80,6 +80,7 @@ func Provider() *schema.Provider {
 			"gitea_repository":                   resourceGiteaRepository(),
 			"gitea_fork":                         resourceGiteaFork(),
 			"gitea_public_key":                   resourceGiteaPublicKey(),
+			"gitea_gpg_key":                      resourceGiteaGPGKey(),
 			"gitea_team":                         resourceGiteaTeam(),
 			"gitea_team_membership":              resourceGiteaTeamMembership(),
 			"gitea_team_members":                 resourceGiteaTeamMembers(),
