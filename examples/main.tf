@@ -1,137 +1,49 @@
-resource "gitea_repository" "test" {
-  username     = "lerentis"
-  name         = "test"
-  private      = true
-  issue_labels = "Default"
-  license      = "MIT"
-  gitignores   = "Go"
+
+module "test_gitea_fork" {
+  source = "./resources/gitea_fork"
 }
 
-resource "gitea_repository" "mirror" {
-  username                     = "lerentis"
-  name                         = "terraform-provider-gitea-mirror"
-  description                  = "Mirror of Terraform Provider"
-  mirror                       = true
-  migration_clone_address      = "https://git.uploadfilter24.eu/lerentis/terraform-provider-gitea.git"
-  migration_service            = "gitea"
-  migration_service_auth_token = var.gitea_mirror_token
+module "test_gitea_git_hook" {
+  count  = var.server_side_hooks_enabled ? 1 : 0
+  source = "./resources/gitea_git_hook"
 }
 
-resource "gitea_org" "test_org" {
-  name        = "test-org"
-  description = "test description"
+module "test_gitea_org" {
+  source = "./resources/gitea_org"
 }
 
-resource "gitea_repository" "org_repo" {
-  username = gitea_org.test_org.name
-  name     = "org-test-repo"
+module "test_gitea_public_key" {
+  source = "./resources/gitea_public_key"
 }
 
-data "gitea_user" "me" {
-  username = "lerentis"
+module "test_gitea_repo_branch_protection" {
+  source = "./resources/gitea_repo_branch_protection"
 }
 
-resource "gitea_user" "test" {
-  username             = "test"
-  login_name           = "test"
-  password             = "Geheim1!"
-  email                = "test@user.dev"
-  must_change_password = false
-  admin                = true
+module "test_gitea_repository" {
+  source = "./resources/gitea_repository"
 }
 
-
-resource "gitea_public_key" "test_user_key" {
-  title     = "test"
-  key       = file("${path.module}/resources/gitea_public_key/id_ed25519.pub")
-  read_only = true
-  username  = gitea_user.test.username
+module "test_gitea_repository_key" {
+  source = "./resources/gitea_repository_key"
 }
 
-
-resource "gitea_team" "test_team" {
-  name         = "Devs"
-  organisation = gitea_org.test_org.name
-  description  = "Devs of Test Org"
-  permission   = "write"
-  members      = [gitea_user.test.username]
+module "test_gitea_team" {
+  source = "./resources/gitea_team"
 }
 
-resource "gitea_team" "admin_team" {
-  name         = "Admins"
-  organisation = gitea_org.test_org.name
-  description  = "Admins of Test Org"
-  permission   = "admin"
-  members      = [data.gitea_user.me.username]
+module "test_gitea_team_members" {
+  source = "./resources/gitea_team_members"
 }
 
-resource "gitea_git_hook" "org_repo_pre_receive" {
-  name    = "pre-receive"
-  user    = gitea_org.test_org.name
-  repo    = gitea_repository.org_repo.name
-  content = file("${path.module}/pre-receive.sh")
+module "test_gitea_team_membership" {
+  source = "./resources/gitea_team_membership"
 }
 
-resource "gitea_org" "org1" {
-  name = "org1"
+module "test_gitea_token" {
+  source = "./resources/gitea_token"
 }
 
-resource "gitea_org" "org2" {
-  name = "org2"
-}
-
-resource "gitea_repository" "repo1_in_org1" {
-  username = gitea_org.org1.name
-  name     = "repo1-in-org1"
-}
-
-resource "gitea_fork" "user_fork_of_repo1_in_org1" {
-  owner = gitea_org.org1.name
-  repo  = gitea_repository.repo1_in_org1.name
-}
-
-resource "gitea_fork" "org2_fork_of_repo1_in_org1" {
-  owner        = gitea_org.org1.name
-  repo         = gitea_repository.repo1_in_org1.name
-  organization = gitea_org.org2.name
-}
-
-resource "gitea_token" "test_token" {
-  username = data.gitea_user.me.username
-  name     = "test-token"
-}
-
-resource "gitea_repository" "test_existing_user" {
-  username     = "testuser2"
-  name         = "testExistingUser"
-  private      = true
-  issue_labels = "Default"
-  license      = "MIT"
-  gitignores   = "Go"
-}
-
-//resource "gitea_repository" "test_bs_user" {
-//  username     = "manualTest"
-//  name         = "testBullshitUser"
-//  private      = true
-//  issue_labels = "Default"
-//  license      = "MIT"
-//  gitignores   = "Go"
-//}
-
-output "token" {
-  value = resource.gitea_token.test_token.token
-  sensitive = true
-}
-
-data "gitea_repo" "org_repos" {
-  name = each.key
-  username = gitea_org.org1.name
-  for_each = {
-    for repo in resource.gitea_org.org1.repos : repo => repo
-  }
-}
-
-output "repos" {
-  value = data.gitea_repo.org_repos["repo1-in-org1"].clone_url
+module "test_gitea_user" {
+  source = "./resources/gitea_user"
 }

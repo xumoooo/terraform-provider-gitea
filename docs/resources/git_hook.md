@@ -21,19 +21,19 @@ if you want to procede, you need to enable server side hooks as stated [here](ht
 ## Example Usage
 
 ```terraform
-resource "gitea_org" "test_org" {
-  name = "test-org"
+resource "gitea_org" "example" {
+  name = "git-hook-example-org"
 }
 
-resource "gitea_repository" "org_repo" {
-  username = gitea_org.test_org.name
-  name     = "org-test-repo"
+resource "gitea_repository" "example" {
+  username = gitea_org.example.name
+  name     = "git-hook-example-repo"
 }
 
 resource "gitea_git_hook" "org_repo_post_receive" {
   name    = "post-receive"
-  user    = gitea_org.test_org.name
-  repo    = gitea_repository.org_repo.name
+  user    = gitea_org.example.name
+  repo    = gitea_repository.example.name
   content = file("${path.module}/post-receive.sh")
 }
 ```

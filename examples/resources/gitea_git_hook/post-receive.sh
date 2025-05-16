@@ -4,5 +4,6 @@ do
     branch=$(git rev-parse --symbolic --abbrev-ref $refname)
     if [ "master" = "$branch" ]; then
         # Do something
+        true
     fi
 done

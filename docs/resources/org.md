@@ -16,13 +16,13 @@ Organisations are a way to group repositories and abstract permission management
 ## Example Usage
 
 ```terraform
-resource "gitea_org" "test_org" {
-  name = "test-org"
+resource "gitea_org" "example" {
+  name = "org-example-org"
 }
 
-resource "gitea_repository" "org_repo" {
-  username = gitea_org.test_org.name
-  name = "org-test-repo"
+resource "gitea_repository" "example" {
+  username = gitea_org.example.name
+  name     = "org-example-repo"
 }
 ```
 
