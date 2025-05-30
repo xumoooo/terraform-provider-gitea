@@ -85,6 +85,7 @@ variable "gitea_clone_token" {
 - `allow_rebase` (Boolean)
 - `allow_rebase_explicit` (Boolean)
 - `allow_squash_merge` (Boolean)
+- `archive_on_destroy` (Boolean) Set to 'true' to archive the repository instead of deleting on destroy.
 - `archived` (Boolean)
 - `auto_init` (Boolean) Flag if the repository should be initiated with the configured values
 - `autodetect_manual_merge` (Boolean)

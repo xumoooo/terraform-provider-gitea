@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
@@ -34,10 +35,11 @@ const (
 	repoAllowRebase              string = "allow_rebase"
 	repoAllowRebaseMerge         string = "allow_rebase_explicit"
 	repoAllowSquash              string = "allow_squash_merge"
-	repoAchived                  string = "archived"
+	repoArchived                 string = "archived"
 	repoAllowManualMerge         string = "allow_manual_merge"
 	repoAutodetectManualMerge    string = "autodetect_manual_merge"
 	repoMirror                   string = "mirror"
+	repoArchiveOnDestroy         string = "archive_on_destroy"
 	migrationCloneAddresse       string = "migration_clone_addresse"
 	migrationCloneAddress        string = "migration_clone_address"
 	migrationService             string = "migration_service"
@@ -253,7 +255,7 @@ func resourceRepoUpdate(d *schema.ResourceData, meta interface{}) (err error) {
 		var mirrorInterval string = d.Get(migrationMirrorInterval).(string)
 		opts.MirrorInterval = &mirrorInterval
 	} else {
-		var archived bool = d.Get(repoAchived).(bool)
+		var archived bool = d.Get(repoArchived).(bool)
 		opts.Archived = &archived
 	}
 
@@ -268,12 +270,83 @@ func resourceRepoUpdate(d *schema.ResourceData, meta interface{}) (err error) {
 
 }
 
-func respurceRepoDelete(d *schema.ResourceData, meta interface{}) (err error) {
+func resourceRepoDelete(d *schema.ResourceData, meta interface{}) (err error) {
 	client := meta.(*gitea.Client)
 
-	client.DeleteRepo(d.Get(repoOwner).(string), d.Get(repoName).(string))
+	archiveOnDestroy := d.Get(repoArchiveOnDestroy).(bool)
+	archived := d.Get(repoArchived).(bool)
+	owner := d.Get(repoOwner).(string)
+	name := d.Get(repoName).(string)
 
-	return
+	if archiveOnDestroy {
+		if archived {
+			log.Printf("[DEBUG] Repository already archived, nothing to do on delete: %s/%s", owner, name)
+			err = nil
+			return err
+		} else {
+			log.Printf("[DEBUG] Archiving repository on delete: %s/%s", owner, name)
+			err = archiveRepo(d, client)
+			return err
+		}
+	} else {
+		log.Printf("[DEBUG] Deleting repository: %s/%s", owner, repoName)
+		err = deleteRepo(d, client)
+		return err
+	}
+}
+
+func archiveRepo(d *schema.ResourceData, client *gitea.Client) (err error) {
+	if err := d.Set("archived", true); err != nil {
+		return err
+	}
+
+	var name string = d.Get(repoName).(string)
+	var description string = d.Get(repoDescription).(string)
+	var website string = d.Get(repoWebsite).(string)
+	var private bool = d.Get(repoPrivateFlag).(bool)
+	var template bool = d.Get(repoTemplate).(bool)
+	var hasIssues bool = d.Get(repoIssues).(bool)
+	var hasWiki bool = d.Get(repoWiki).(bool)
+	var defaultBranch string = d.Get(repoDefaultBranch).(string)
+	var hasPRs bool = d.Get(repoPrs).(bool)
+	var hasProjects bool = d.Get(repoProjects).(bool)
+	var ignoreWhitespaceConflicts bool = d.Get(repoIgnoreWhitespace).(bool)
+	var allowMerge bool = d.Get(repoAllowMerge).(bool)
+	var allowRebase bool = d.Get(repoAllowRebase).(bool)
+	var allowRebaseMerge bool = d.Get(repoAllowRebaseMerge).(bool)
+	var allowSquash bool = d.Get(repoAllowSquash).(bool)
+	var allowManualMerge bool = d.Get(repoAllowManualMerge).(bool)
+	var autodetectManualMerge bool = d.Get(repoAutodetectManualMerge).(bool)
+	var archived bool = d.Get(repoArchived).(bool)
+
+	opts := gitea.EditRepoOption{
+		Name:                      &name,
+		Description:               &description,
+		Website:                   &website,
+		Private:                   &private,
+		Template:                  &template,
+		HasIssues:                 &hasIssues,
+		HasWiki:                   &hasWiki,
+		DefaultBranch:             &defaultBranch,
+		HasPullRequests:           &hasPRs,
+		HasProjects:               &hasProjects,
+		IgnoreWhitespaceConflicts: &ignoreWhitespaceConflicts,
+		AllowMerge:                &allowMerge,
+		AllowRebase:               &allowRebase,
+		AllowRebaseMerge:          &allowRebaseMerge,
+		AllowSquash:               &allowSquash,
+		AllowManualMerge:          &allowManualMerge,
+		AutodetectManualMerge:     &autodetectManualMerge,
+		Archived:                  &archived,
+	}
+
+	_, _, err = client.EditRepo(d.Get(repoOwner).(string), d.Get(repoName).(string), opts)
+	return err
+}
+
+func deleteRepo(d *schema.ResourceData, client *gitea.Client) (err error) {
+	_, err = client.DeleteRepo(d.Get(repoOwner).(string), d.Get(repoName).(string))
+	return err
 }
 
 func setRepoResourceData(repo *gitea.Repository, d *schema.ResourceData) (err error) {
@@ -309,7 +382,7 @@ func resourceGiteaRepository() *schema.Resource {
 		Read:   resourceRepoRead,
 		Create: resourceRepoCreate,
 		Update: resourceRepoUpdate,
-		Delete: respurceRepoDelete,
+		Delete: resourceRepoDelete,
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
 		},
@@ -481,6 +554,13 @@ func resourceGiteaRepository() *schema.Resource {
 				Required: false,
 				Optional: true,
 				Default:  false,
+			},
+			"archive_on_destroy": {
+				Type:        schema.TypeBool,
+				Required:    false,
+				Optional:    true,
+				Default:     false,
+				Description: "Set to 'true' to archive the repository instead of deleting on destroy.",
 			},
 			"allow_manual_merge": {
 				Type:     schema.TypeBool,
